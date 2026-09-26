@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b1220">
+<title>買取価格比較</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css?v=20260926172628">
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand"><span class="logo" aria-hidden="true">¥</span><h1>買取価格比較</h1></div>
+    <div class="barright">
+      <span id="updated" class="updated"></span>
+      <button id="cartBtn" class="cartbtn" hidden><span class="ico" aria-hidden="true">🧮</span><span class="lbl">売り先計算</span><b id="cartCount">0</b></button>
+    </div>
+  </div>
+  <div class="controls" id="controls" hidden>
+    <div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="商品名・型番・JAN で検索" autocomplete="off"></div>
+    <div class="row">
+      <select id="sort" aria-label="並び順">
+        <option value="price">買取価格が高い順</option>
+        <option value="move">値動きが大きい順</option>
+        <option value="spread">店による差が大きい順</option>
+        <option value="shops">取扱店が多い順</option>
+      </select>
+      <div class="seg" id="viewSeg" role="group" aria-label="表示の切り替え">
+        <button data-view="rank" aria-pressed="true">ランキング</button>
+        <button data-view="table" aria-pressed="false">店別の表</button>
+      </div>
+      <button id="shopPickBtn" class="ghost">比較する店 <b id="shopPickCount"></b></button>
+      <label class="chk"><input type="checkbox" id="favOnly"> ★のみ</label>
+      <select id="cond" aria-label="状態" hidden></select>
+    </div>
+  </div>
+  <nav id="cats" class="cats" hidden></nav>
+</header>
+
+<main>
+  <section id="gate" class="gate" hidden>
+    <form id="gateForm">
+      <div class="logo big" aria-hidden="true">¥</div>
+      <p>パスワードを入力してください</p>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <button type="submit">表示</button>
+      <p id="gateErr" class="err" hidden>パスワードが違います</p>
+    </form>
+  </section>
+
+  <section id="kpis" class="kpis" hidden></section>
+  <details id="shops" class="shops" hidden>
+    <summary>取得状況</summary>
+    <ul id="shopList"></ul>
+  </details>
+  <div id="shopPick" class="shoppick" hidden></div>
+
+  <p id="summary" class="summary"></p>
+  <nav id="jumps" class="jumps" hidden aria-label="検索結果の一覧"></nav>
+  <ul id="list" class="list"></ul>
+  <div id="tableWrap" class="tablewrap" hidden><table id="table" class="ptable"></table></div>
+  <button id="more" class="more" hidden>もっと見る</button>
+</main>
+<section id="cartPanel" class="panel" hidden aria-label="売り先計算"></section>
+<div id="toast" class="toast" hidden></div>
+<script src="app.js?v=20260926172628"></script>
+<script src="cart.js?v=20260926172628"></script>
+</body>
+</html>
