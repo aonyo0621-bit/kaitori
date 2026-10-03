@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<!-- 読み込めるものを限る（店から取った名前・URL を画面に出すので、万一エスケープが漏れてもスクリプトを動かさない多層防御。2026-09-29 再点検）。
+     スクリプトは自分の app.js・cart.js・skin-init.js・skin.js・sync.js と、📷 の読み取り部品（ZXing。app.js の ZX_URL と同じ版）と、
+     引き継ぎの QR コードの部品（qrcode-generator。sync.js の QR_URL と同じ版）だけ。版を変える時はここも直す（tests/test_web_csp.py が確かめる）。
+     style の 'unsafe-inline' は店の色（style 属性）のため。frame-ancestors は meta では効かない（GitHub Pages はヘッダーを付けられない） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer"><!-- 店のページへ移る時に、このサイトの URL（比較サイトであること）を送らない -->
+<meta name="theme-color" content="#0b1220">
+<title>買取価格比較</title>
+<!-- 見た目（取引所 ⇔ いつもの）を描く前に決める（CSP でインラインの script は使えないので別ファイル） -->
+<script src="skin-init.js?v=20261003172839"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<!-- 見た目「取引所」の書体（本文 IBM Plex Sans JP・数字 Chivo Mono）。いつもの見た目では使わない（使わない書体のファイルは読み込まれない）。
+     数字の書体は「0 が普通の丸」のものにする（2026-10-02: JetBrains Mono は 0 の中に点があり、小さい字で 8 に見えた） -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;600;700&family=Chivo+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css?v=20261003172839">
+<link rel="stylesheet" href="skin-board.css?v=20261003172839">
+</head>
+<body>
+<div id="stale" class="stale" role="alert" hidden></div>
+<header class="top">
+  <div id="ticker" class="ticker" role="region" aria-label="最高値の値動き（テロップ）" hidden></div>
+  <div class="bar">
+    <div class="brand"><span class="logo" aria-hidden="true">¥</span><h1>買取価格比較</h1></div>
+    <div class="barright">
+      <button id="skinBtn" class="skinbtn" type="button"><span class="lbl">見た目</span><b></b></button>
+      <span id="updated" class="updated"></span>
+      <button id="cartBtn" class="cartbtn" hidden><span class="ico" aria-hidden="true">🧮</span><span class="lbl">売り先計算</span><b id="cartCount">0</b></button>
+    </div>
+  </div>
+  <div class="controls" id="controls" hidden>
+    <div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="商品名・型番・JAN で検索" autocomplete="off"><button id="scanBtn" type="button" class="scanbtn" aria-label="バーコードで探す" title="バーコード（JAN）をカメラで読んで探す">📷</button></div>
+    <div class="row">
+      <select id="sort" aria-label="並び順">
+        <option value="price">買取価格が高い順</option>
+        <option value="move">各店の値動きが大きい順</option>
+        <option value="spread">店による差が大きい順</option>
+        <option value="shops">取扱店が多い順</option>
+      </select>
+      <button id="mvBtn" class="ghost mvbtn" aria-pressed="false" title="商品ごとの最高買取額が、取得した回と回のあいだでどれだけ上がった・下がったかを見る">最高値の値動き</button>
+      <div class="seg" id="viewSeg" role="group" aria-label="表示の切り替え">
+        <button data-view="rank" aria-pressed="true">ランキング</button>
+        <button data-view="table" aria-pressed="false">店別の表</button>
+      </div>
+      <button id="shopPickBtn" class="ghost">比較する店 <b id="shopPickCount"></b></button>
+      <label class="chk"><input type="checkbox" id="favOnly"> ★のみ</label>
+      <select id="cond" aria-label="状態" hidden></select>
+    </div>
+  </div>
+  <nav id="cats" class="cats" hidden></nav>
+</header>
+
+<main>
+  <section id="gate" class="gate" hidden>
+    <form id="gateForm">
+      <div class="logo big" aria-hidden="true">¥</div>
+      <p id="pwLabel">パスワードを入力してください</p>
+      <!-- 入力欄の名前（読み上げ）と誤りの知らせ（role="alert"）。2026-09-30 再総チェック: 名前の無い入力欄で、誤りも読み上げられなかった -->
+      <input id="pw" type="password" autocomplete="current-password" required aria-labelledby="pwLabel">
+      <button type="submit">表示</button>
+      <p id="gateErr" class="err" role="alert" hidden>パスワードが違います</p>
+      <p id="gateNote" class="muted gatenote" hidden>このブラウザではパスワードを覚えられないため、開くたびに入力が必要です（非公開モード・サイトのデータを保存しない設定など）</p>
+    </form>
+  </section>
+
+  <section id="kpis" class="kpis" hidden></section>
+  <details id="shops" class="shops" hidden>
+    <summary>取得状況</summary>
+    <ul id="shopList"></ul>
+  </details>
+  <div id="shopPick" class="shoppick" hidden></div>
+
+  <section id="mvBar" class="mvbar" hidden aria-label="最高値の値動き"></section>
+  <p id="summary" class="summary"></p>
+  <nav id="jumps" class="jumps" hidden aria-label="検索結果の一覧"></nav>
+  <ul id="list" class="list"></ul>
+  <div id="tableWrap" class="tablewrap" hidden><table id="table" class="ptable"></table></div>
+  <button id="more" class="more" hidden>もっと見る</button>
+  <footer id="foot" class="foot" hidden><button id="syncOpenBtn" class="linkbtn syncopen" title="★・在庫リスト・仕入れ値などの設定をファイルに控える・別の端末に引き継ぐ">設定の控え・別の端末への引き継ぎ</button><button id="forgetPw" class="linkbtn" title="この端末に覚えたパスワードを消します（★・在庫リスト等の設定は残ります）">この端末のパスワードを消す（ログアウト）</button></footer>
+</main>
+<section id="cartPanel" class="panel" hidden role="dialog" aria-label="売り先計算"></section>
+<section id="scan" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="scanTitle">
+  <div class="sheetbox">
+    <div class="sheethead"><b id="scanTitle">バーコードで探す</b><button type="button" class="x" data-close aria-label="閉じる">×</button></div>
+    <div id="scanView" class="scanview" hidden><video id="scanVideo" playsinline muted autoplay></video><div class="scanframe" aria-hidden="true"></div></div>
+    <p id="scanMsg" class="scanmsg" aria-live="polite"></p>
+    <form id="scanForm" class="scanform">
+      <input id="scanMan" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="search" maxlength="20" placeholder="JAN の番号を手入力（8〜13 桁）" aria-label="JAN の番号">
+      <button type="submit">探す</button>
+    </form>
+    <p id="scanManMsg" class="scanmsg err" aria-live="polite" hidden></p>
+  </div>
+</section>
+<section id="pfSet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="pfSetTitle">
+  <form id="pfSetForm" class="sheetbox pfsetbox">
+    <div class="sheethead"><b id="pfSetTitle">実利益の計算の設定</b><button type="button" class="x" data-close aria-label="閉じる">×</button></div>
+    <p class="muted">実利益 ＝ 最高値 × (1 − 査定減額率) − 送料 − (仕入れ値 − ポイント還元)<br>利益率 ＝ 実利益 ÷ (仕入れ値 − ポイント還元)。売り先計算の手取り見込み（買取合計 − 査定減額 − 送料・手数料）にも使います。この端末に保存します。</p>
+    <label class="pfrow"><span>査定減額率</span><input name="cut" type="text" inputmode="decimal" autocomplete="off"><em>%</em></label>
+    <p class="muted">買取店の提示額（満額）から実際に減らされる見込み。既定 5%</p>
+    <label class="pfrow"><span>買取送料</span><input name="ship" type="text" inputmode="numeric" autocomplete="off"><em>円</em></label>
+    <p class="muted">買取店へ送る 1 回分。売り先計算で店ごとに送料・手数料を設定した店は、そちらを使います（無料基準も効きます。二重には引きません）。既定 800 円</p>
+    <div class="pfrow"><span>ポイント還元</span><input name="pt" type="text" inputmode="decimal" autocomplete="off" aria-label="ポイント還元"><select name="unit" aria-label="ポイントの単位"><option value="pct">%</option><option value="yen">円</option></select></div>
+    <p class="muted">仕入れの時にもらえるポイント。% は仕入れ値に対する率、円は 1 個あたりの額。上限は仕入れ値の 50%（% でも円でも。01.商材購入 の基準と同じ）。既定 0</p>
+    <p id="pfSetMsg" class="err" aria-live="polite"></p>
+    <div class="sheetacts"><button type="button" data-reset>既定に戻す</button><button type="submit" class="primary">閉じる</button></div>
+  </form>
+</section>
+<section id="syncSheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="syncTitle">
+  <div class="sheetbox syncbox">
+    <div class="sheethead"><b id="syncTitle">設定の控え・引き継ぎ</b><button type="button" class="x" data-close aria-label="閉じる">×</button></div>
+    <p id="syncMsg" class="syncmsg" aria-live="polite" hidden></p>
+    <div id="syncBody"></div>
+  </div>
+</section>
+<div id="toast" class="toast" hidden></div>
+<div id="live" class="sr-only" role="status" aria-live="polite"></div>
+<script src="app.js?v=20261003172839"></script>
+<script src="cart.js?v=20261003172839"></script>
+<script src="skin.js?v=20261003172839"></script>
+<script src="sync.js?v=20261003172839"></script>
+</body>
+</html>
