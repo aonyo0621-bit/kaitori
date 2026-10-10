@@ -1,0 +1,583 @@
+/* 買取価格比較 — 濃紺のヘッダー＋白いカード。最高値は緑、値上がりは赤・値下がりは青。 */
+:root {
+  --bg: #eef1f6; --card: #ffffff; --card2: #f7f9fc; --text: #0f172a; --muted: #64748b; --line: #e2e8f0;
+  --head: #0b1220; --head2: #16213a; --headtext: #e5ecf6; --headmuted: #93a4bf;
+  --accent: #4f46e5; --accent-soft: #eef2ff;
+  --best: #059669; --best-bg: #ecfdf5; --best-line: #a7f3d0;
+  --up: #dc2626; --down: #2563eb; --warn: #b45309; --warn-bg: #fffbeb; --err: #dc2626;
+  --chip: #f1f5f9; --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 4px 16px rgba(15, 23, 42, .06);
+  --radius: 14px;
+  --num: "Inter", "Noto Sans JP", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f1a; --card: #121a2b; --card2: #0f1726; --text: #e5ecf6; --muted: #8fa0ba; --line: #22304a;
+    --head: #060a13; --head2: #0e1628;
+    --accent: #818cf8; --accent-soft: #1e1b4b;
+    --best: #34d399; --best-bg: #062a1f; --best-line: #065f46;
+    --up: #f87171; --down: #60a5fa; --warn: #fbbf24; --warn-bg: #2a1f05; --err: #f87171;
+    --chip: #1a2438; --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 20px rgba(0, 0, 0, .35);
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* 見えないが読み上げには伝わる欄（トーストの読み上げ用 #live） */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 "Noto Sans JP", system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif; }
+button { font: inherit; }
+.muted { color: var(--muted); font-size: 13px; }
+.err { color: var(--err); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; margin-right: 6px; vertical-align: middle; }
+
+/* ---- ヘッダー ---- */
+.top { position: sticky; top: 0; z-index: 10; background: linear-gradient(135deg, var(--head), var(--head2));
+  color: var(--headtext); padding: 10px 16px 0; box-shadow: 0 6px 24px rgba(2, 6, 23, .25); }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font: 800 17px var(--num);
+  color: #0b1220; background: linear-gradient(135deg, #34d399, #22d3ee); }
+.logo.big { width: 52px; height: 52px; font-size: 28px; border-radius: 14px; margin: 0 auto 6px; }
+h1 { font-size: 17px; margin: 0; letter-spacing: .04em; font-weight: 700; }
+.barright { display: flex; align-items: center; gap: 12px; }
+.updated { font-size: 12px; color: var(--headmuted); white-space: nowrap; }
+.cartbtn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(255, 255, 255, .08); color: var(--headtext); border-radius: 999px; padding: 5px 12px; cursor: pointer;
+  font-size: 13px; white-space: nowrap; }
+.cartbtn:hover { background: rgba(255, 255, 255, .16); }
+.cartbtn b { background: #34d399; color: #062a1f; border-radius: 999px; padding: 0 7px; font: 700 12px var(--num); }
+.controls { display: grid; gap: 8px; margin-top: 10px; }
+.search { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .14); border-radius: 12px; padding: 0 12px; }
+.search:focus-within { border-color: #34d399; background: rgba(255, 255, 255, .12); }
+.search span { color: var(--headmuted); font-size: 18px; }
+.search input { flex: 1; min-width: 0; border: 0; background: none; color: var(--headtext); font: inherit; padding: 9px 0; outline: none; }
+.search input::placeholder { color: var(--headmuted); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.top select, .top .ghost { font-size: 13px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .16);
+  background: rgba(255, 255, 255, .06); color: var(--headtext); cursor: pointer; }
+.top select option { color: #0f172a; }
+.top .ghost b { font: 600 12px var(--num); color: #34d399; margin-left: 2px; }
+.chk { font-size: 13px; display: inline-flex; gap: 5px; align-items: center; color: var(--headmuted); cursor: pointer; }
+.seg { display: inline-flex; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .16); border-radius: 10px; padding: 2px; }
+.seg button { border: 0; background: none; color: var(--headmuted); font-size: 13px; padding: 4px 12px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-pressed=true] { background: #fff; color: #0b1220; font-weight: 600; }
+.cats { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 10px -16px 0; padding: 0 16px; }
+.cats::-webkit-scrollbar { display: none; }
+.cats button { flex: none; border: 0; background: none; color: var(--headmuted); font-size: 14px; padding: 8px 12px 10px;
+  cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+.cats button span { font: 600 11px var(--num); margin-left: 6px; opacity: .75; }
+.cats button:hover { color: var(--headtext); }
+.cats button[aria-pressed=true] { color: #fff; border-bottom-color: #34d399; font-weight: 600; }
+
+main { max-width: 1280px; margin: 0 auto; padding: 14px 16px 48px; }
+
+/* ---- パスワード ---- */
+.gate { display: grid; place-items: center; min-height: 55vh; }
+.gate form { display: grid; gap: 10px; width: min(340px, 100%); text-align: center; background: var(--card);
+  padding: 28px 24px; border-radius: 18px; box-shadow: var(--shadow); }
+.gate input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card2); color: var(--text); }
+.gate button { padding: 10px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+.gate .gatenote { margin: 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }  /* パスワードを覚えられない端末の案内（小さく） */
+
+/* ---- 要約（KPI） ---- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpi { background: var(--card); border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow); display: grid; gap: 2px; }
+.kpi span { font-size: 12px; color: var(--muted); }
+.kpi b { font: 700 20px var(--num); letter-spacing: -.01em; }
+.kpi b small { font-size: 13px; color: var(--muted); font-weight: 600; }
+.kpi .up { color: var(--up); } .kpi .down { color: var(--down); }
+.kpi.warn b { color: var(--warn); }
+@media (max-width: 640px) {  /* スマホ: 要約は横 1 列（横にスクロール）にして縦を取らない */
+  .kpis { display: flex; overflow-x: auto; scrollbar-width: none; gap: 8px; margin: 0 -16px 10px; padding: 2px 16px 4px; }
+  .kpis::-webkit-scrollbar { display: none; }
+  .kpi { flex: none; padding: 7px 12px; min-width: 104px; }
+  .kpi span { font-size: 11px; }
+  .kpi b { font-size: 16px; }
+}
+@media (max-width: 999px) { .top { position: relative; } }  /* スマホはヘッダーを固定しない（商品を広く見せる） */
+
+/* ---- 取得状況・店の選択 ---- */
+.shops, .shoppick { background: var(--card); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.shops summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.shops ul { list-style: none; padding: 0; margin: 8px 0 2px; display: grid; gap: 6px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); font-size: 13px; }
+.shops li { display: flex; align-items: center; gap: 6px; }
+.shops li a { color: var(--text); text-decoration: none; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag { font-size: 11.5px; border-radius: 6px; padding: 1px 7px; white-space: nowrap; font-weight: 600; }
+.tag.ok { background: var(--best-bg); color: var(--best); }
+.tag.closed { background: var(--chip); color: var(--muted); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.tag.err { background: var(--warn-bg); color: var(--err); }
+.pickhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.pickhead button, .linkbtn { border: 0; background: none; color: var(--accent); cursor: pointer; font-size: 13px; padding: 2px 6px; }
+.pickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 14px; font-size: 13.5px; }
+.pickgrid label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.pickgrid input { accent-color: var(--accent); }
+.summary { margin: 4px 2px 10px; font-size: 13px; color: var(--muted); }
+.summary b { font: 700 15px var(--num); color: var(--text); }
+
+/* ---- ランキング表示 ---- */
+/* 列は minmax(0, 1fr): 中身の最小幅（長い型番・店名・値動きの印の並び）で列が広がり、スマホで横スクロールが出ないように（2026-09-27 多角チェック1） */
+.list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+.prod { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px;
+  display: grid; gap: 10px 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) {
+  .prod { grid-template-columns: minmax(260px, 1.1fr) 190px minmax(420px, 2fr); align-items: start; }
+  .prod .chart { grid-column: 1 / -1; }
+}
+.p-title .name { font-weight: 700; font-size: 15px; line-height: 1.45; cursor: pointer; overflow-wrap: anywhere; }
+.p-title .name:hover { color: var(--accent); }
+.p-meta { font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; font-family: var(--num); }
+.p-acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.p-acts button { border: 1px solid var(--line); background: var(--card2); color: var(--text); border-radius: 8px;
+  font-size: 12.5px; padding: 3px 10px; cursor: pointer; }
+.p-acts button:hover { border-color: var(--accent); color: var(--accent); }
+.p-acts button.add { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); background: var(--accent-soft); font-weight: 600; }
+button.fav { color: var(--muted); }
+button.fav.on { color: #f59e0b !important; }
+.p-best { display: grid; align-content: start; gap: 1px; padding: 10px 12px; border-radius: 12px;
+  background: var(--best-bg); border: 1px solid var(--best-line); }
+.p-best .lbl { font-size: 11px; color: var(--best); font-weight: 700; letter-spacing: .08em; }
+.p-best .amt { font: 800 24px/1.2 var(--num); color: var(--best); letter-spacing: -.02em; }
+.p-best .bshop { font-size: 13px; font-weight: 600; display: flex; align-items: center; min-width: 0; overflow-wrap: anywhere; }
+.p-best .lead { font-size: 12px; color: var(--muted); font-family: var(--num); }
+@media (max-width: 999px) {
+  .p-best { grid-template-columns: auto 1fr; align-items: baseline; column-gap: 10px; }
+  .p-best .lbl { grid-column: 1 / -1; }
+  .p-best .bshop { grid-column: 2; grid-row: 2; justify-self: end; }
+  .p-best .lead { grid-column: 1 / -1; }
+}
+.p-rank ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-template-columns: 1fr; }
+@media (min-width: 1000px) { .p-rank ol { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; } }
+/* 価格・差・値動き・印が 1 行に入らない時は折り返す（店名は幅 0 から伸びるので、店名のせいでは折り返さない）。
+   折り返した印は右に寄せて、価格・差の下に並べる（2026-09-27 多角チェック2） */
+.p-rank li a { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0; row-gap: 2px; text-decoration: none; color: var(--text);
+  padding: 5px 8px; border-radius: 8px; font-size: 13px; background: var(--card2); }
+.p-rank li a:hover { background: var(--chip); }
+.p-rank .rk { font: 700 11px var(--num); color: var(--muted); width: 18px; flex: none; }
+.p-rank li.first .rk { color: var(--best); }
+/* 店名が消えるほど詰まる時は、後ろの印を次の行へ回す。残す幅は 4.5 文字分か店名の幅の短いほう（app.js の rankChip が
+   style で店ごとに指定。短い店名（ルデヤ・4 文字の店）で 1 行に入るのに印が次の行へ回っていた。2026-09-27 多角チェック2） */
+.p-rank .sn { flex: 1 1 0; min-width: 4.5em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p-rank .pr { font: 600 13.5px var(--num); margin-left: 8px; }
+.p-rank .df { font: 500 11.5px var(--num); color: var(--muted); margin-left: 6px; min-width: 52px; text-align: right; }
+.chg { font: 600 11px var(--num); margin-left: 6px; white-space: nowrap; }
+.chg.up { color: var(--up); } .chg.down { color: var(--down); }
+.morebtn { margin-top: 6px; border: 0; background: none; color: var(--accent); font-size: 12.5px; cursor: pointer; padding: 2px 0; }
+.chart { margin-top: 4px; padding: 10px 12px; background: var(--card2); border-radius: 12px; color: var(--text); }
+.chart svg { width: 100%; height: 200px; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.more { display: block; margin: 16px auto 0; padding: 10px 28px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); cursor: pointer; box-shadow: var(--shadow); }
+.foot { text-align: center; margin: 28px 0 0; }
+.foot .linkbtn { color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---- 店別の表（PC） ---- */
+.tablewrap { overflow: auto; max-height: calc(100vh - var(--hdr, 170px) - 60px); border-radius: var(--radius);
+  background: var(--card); box-shadow: var(--shadow); }
+.ptable { border-collapse: separate; border-spacing: 0; width: 100%; font: 13px var(--num); }
+.ptable th, .ptable td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; vertical-align: top; }
+.ptable thead th { position: sticky; top: 0; z-index: 2; background: var(--card); color: var(--muted); font: 600 11.5px "Noto Sans JP", sans-serif;
+  border-bottom: 2px solid var(--line); vertical-align: bottom; }
+.ptable th.shop { cursor: pointer; white-space: normal; min-width: 70px; max-width: 86px; line-height: 1.3; text-align: center; }
+.ptable th.shop .bar { display: block; height: 3px; border-radius: 3px; margin: 0 auto 5px; width: 26px; }
+.ptable th.shop:hover, .ptable th.sorted { color: var(--accent); }
+.ptable .pname { text-align: left; white-space: normal; overflow-wrap: anywhere; min-width: 260px; max-width: 380px; position: sticky; left: 0; background: var(--card); z-index: 1;
+  font-family: "Noto Sans JP", sans-serif; box-shadow: 1px 0 0 var(--line); }
+.ptable thead .pname { z-index: 3; }
+.ptable .pname .name { font-weight: 600; font-size: 13.5px; cursor: pointer; }
+.ptable .pname .name:hover { color: var(--accent); }
+.ptable .meta { font-size: 11.5px; color: var(--muted); }
+.ptable td.acts, .ptable th.acts { width: 58px; padding: 7px 4px 7px 10px; text-align: left; }
+.ptable button.add, .ptable button.fav { border: 1px solid var(--line); background: var(--card2); border-radius: 6px; width: 22px; height: 22px;
+  cursor: pointer; padding: 0; font-size: 12px; line-height: 1; margin-right: 3px; }
+.ptable button.add { color: var(--accent); }
+.ptable td.topv { color: var(--best); font-weight: 800; font-size: 14px; }
+.ptable td.topv .meta { font-weight: 500; display: flex; align-items: center; justify-content: flex-end; }
+.ptable td.topv.aside { color: var(--warn); }  /* 別枠の価格だけの商品（カードの .p-best.storeonly と同じ色） */
+.ptable td.pname, .ptable td.acts, .ptable td.topv { background: var(--card); }
+.ptable td a { color: var(--text); text-decoration: none; }
+.ptable td a:hover { text-decoration: underline; }
+.ptable td.na { color: var(--line); text-align: center; }
+.ptable tbody tr:hover td { filter: brightness(.97); }
+.ptable .chg { display: block; margin: 0; }
+.ptable .chartrow td { text-align: left; background: var(--card2); }
+.ptable .chartrow .chart { max-width: 960px; background: var(--card); }
+
+/* ---- 売り先計算（カート） ---- */
+.panel { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow: auto; padding: 0 16px 40px; }
+.noscroll { overflow: hidden; }
+.panelhead { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0 10px; font-size: 17px; z-index: 1; background: var(--bg); }
+.panel .x { font-size: 26px; border: 0; background: none; color: var(--text); cursor: pointer; line-height: 1; }
+.pat { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.pat select, .pat input { font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--text); min-width: 0; flex: 1 1 140px; }
+.pat button, .panel .row button { font-size: 13px; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); cursor: pointer; }
+.pat #patSave { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.panel .row { color: var(--text); margin: 6px 0; font-size: 13.5px; }
+.panel .chk { color: var(--text); }
+table.inv { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; background: var(--card);
+  border-radius: 12px; margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden; }
+table.inv th, table.inv td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+table.inv th { font-size: 12px; color: var(--muted); font-weight: 600; }
+table.inv td.num { text-align: right; white-space: nowrap; font-family: var(--num); }
+.qty { white-space: nowrap; }
+.qty input { width: 54px; font: 600 14px var(--num); padding: 4px; text-align: center; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card2); color: var(--text); }
+.qty button, button.rm { border: 1px solid var(--line); background: var(--card2); color: var(--text); border-radius: 8px;
+  width: 28px; height: 28px; cursor: pointer; padding: 0; }
+.fees input { width: 92px; font: 14px var(--num); padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card2); color: var(--text); }
+.fees summary { cursor: pointer; font-size: 14px; margin: 14px 0 6px; font-weight: 600; }
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }  /* minmax(0,…): 合計が 8 桁（¥10,000,000 以上）だと 320・360px で売り先計算の中が横にずれていた（2026-09-29 再点検） */
+.tabs button { font-size: 12.5px; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card); color: var(--muted); cursor: pointer; line-height: 1.4; box-shadow: var(--shadow); }
+.tabs button b { font: 800 17px var(--num); color: var(--text); }
+@media (max-width: 380px) { .tabs button { padding: 10px 4px; } .tabs button b { font-size: 14px; overflow-wrap: anywhere; } }  /* 14px: ¥9,999,999 まで 1 行（320px で測った） */
+@media (max-width: 340px) { .tabs button b { font-size: 13px; } }  /* 13px: 320px でも ¥98,000,000 まで 1 行。これより長い額は折り返す */
+.tabs button[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent), var(--shadow); color: var(--accent); }
+/* 3 つの案の額の下の「何店・送料等」、手取りが一番多い案の印、2 つの案の差の説明（2026-10-01: 「商品ごとに最高値」より「店数を絞る」のほうが
+   高い理由が画面から分からなかった） */
+.tabs button small { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500; line-height: 1.35; color: var(--muted); overflow-wrap: anywhere; }
+.besttag { display: inline-block; font-size: 10px; font-weight: 700; line-height: 1.5; color: var(--best); border: 1px solid currentColor;
+  border-radius: 999px; padding: 0 5px; white-space: nowrap; vertical-align: 1px; }
+.plannote { margin: 8px 0 2px; padding: 8px 10px; border-radius: 10px; border-left: 3px solid var(--best); background: var(--card2);
+  color: var(--text); font-size: 12.5px; line-height: 1.65; overflow-wrap: anywhere; }
+.plannote b { font-family: var(--num); }
+table.inv td.num .tie { font-size: 11px; }
+.res { background: var(--card); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+.reshead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.res .net { font: 800 22px var(--num); color: var(--best); }
+.shopblk { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+.shoph { display: flex; justify-content: space-between; font-weight: 700; font-family: var(--num); }
+.shopblk ul { list-style: none; padding: 0; margin: 4px 0 0; font-size: 13px; }
+.shopblk li { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.shopblk li span { white-space: nowrap; font-family: var(--num); }
+.shopblk a, .res a { color: var(--text); }
+.warnbox { margin-top: 10px; background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 30; background: #0b1220; color: #fff;
+  padding: 9px 16px; border-radius: 10px; font-size: 13px; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0, 0, 0, .3); }
+@media (min-width: 1000px) {
+  .panel { left: auto; width: min(780px, 62vw); box-shadow: -12px 0 40px rgba(2, 6, 23, .2); padding: 0 24px 40px; }
+  .noscroll { overflow: auto; }
+  .top { padding: 12px 24px 0; }
+  .cats { margin: 10px -24px 0; padding: 0 24px; flex-wrap: wrap; }
+  .controls { grid-template-columns: minmax(320px, 560px) 1fr; align-items: center; column-gap: 14px; }
+  main { max-width: none; padding: 16px 24px 48px; }  /* PC は画面の横幅いっぱいを使う */
+  .ptable .pname { min-width: 300px; max-width: 520px; }
+  .ptable th.shop { min-width: 76px; max-width: 110px; }
+  .prod { grid-template-columns: minmax(300px, 1.2fr) 210px minmax(480px, 3fr); }
+  .p-rank ol { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+}
+@media (max-width: 999px) {  /* スマホ: 在庫リストは「商品名」の行と「個数・価格・削除」の行の 2 段 */
+  table.inv.items thead { display: none; }
+  /* 表のままだと、長い商品名のある在庫で表の幅が画面より広く計算され、320〜360px で売り先計算が横に 16〜56px ずれていた（行を格子にしても、
+     表の幅は中身の一番長い行で決まる）。表と tbody をブロックにして、行の幅を画面の幅に合わせる（2026-10-01。390px 以上は元から収まっていた） */
+  table.inv.items, table.inv.items tbody { display: block; }
+  table.inv.items td.num .muted { white-space: normal; overflow-wrap: anywhere; }
+  table.inv.items tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 8px;
+    border-bottom: 1px solid var(--line); padding: 8px 10px; }
+  table.inv.items td { border: 0; padding: 0; }
+  table.inv.items td:first-child { grid-column: 1 / -1; margin-bottom: 4px; font-weight: 600; }
+  table.inv.items td.num { text-align: right; }
+  .updated { display: none; }
+  .cartbtn .lbl { display: none; }
+}
+
+/* ---- 来店のみの価格 ---- */
+.storetag { display: inline-block; font: 600 10.5px "Noto Sans JP", sans-serif; color: var(--warn); background: var(--warn-bg);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 5px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+.storebox { margin-top: 8px; padding: 8px; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.storebox .storehead { display: block; font-size: 11.5px; color: var(--warn); margin-bottom: 4px; }
+.storebox li a { background: var(--warn-bg); }
+.storebox .rk { visibility: hidden; }
+.p-best.storeonly { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.p-best.storeonly .lbl, .p-best.storeonly .amt { color: var(--warn); }
+.ptable td.store { background: var(--card); }
+.ptable td.store a { color: var(--warn); }
+.ptable td.store .storetag { display: block; margin: 2px 0 0 auto; width: max-content; }
+/* 価格が不安定（offer[10]。2026-09-29）の印は文言が長いので、表のセルでは店の列・最高値の列を広げないよう折り返す。
+   最高値の列（不安定な価格だけの商品）は数字の下に置く（2026-09-30 再総チェック: 数字の横に 1 行で並び、最高値の列が約 160px 広がっていた） */
+.ptable td.store .storetag.unst, .ptable td.topv .storetag.unst { white-space: normal; width: auto; max-width: 8.5em; text-align: center; }
+.ptable td.topv .storetag.unst { display: block; margin: 2px 0 0 auto; }
+.storeopt { display: flex; gap: 6px; align-items: center; margin-top: 10px; font-size: 13.5px; cursor: pointer; }
+
+/* ---- 順位の色（1 位を一番目立たせ、2 位・3 位ははっきり薄く） ---- */
+:root { --r1: #059669; --r1-text: #ffffff; --r2: #6ee7b7; --r2-text: #064e3b; --r3: #d1fae5; --r3-text: #065f46; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --r1: #10b981; --r1-text: #03140d; --r2: #1f6f55; --r2-text: #d1fae5; --r3: #173d31; --r3-text: #a7f3d0; }
+}
+.ptable td.r1 { background: var(--r1); }
+.ptable td.r1 a, .ptable td.r1 .chg { color: var(--r1-text); font-weight: 800; }
+.ptable td.r2 { background: var(--r2); }
+.ptable td.r2 a { color: var(--r2-text); font-weight: 700; }
+.ptable td.r3 { background: var(--r3); }
+.ptable td.r3 a { color: var(--r3-text); font-weight: 600; }
+/* 同じ店のもう 1 つの価格（「来店 27,500」「郵送 …」）も順位の色の上で読める色に（2026-09-30 再総チェック: 補足の灰色が緑の地に重なり、
+   コントラスト 1.3（暗い設定は 1.05）でほぼ読めなかった。取引所の見た目は skin-board.css で補足の色に戻す） */
+.ptable td.r1 .meta { color: var(--r1-text); }
+.ptable td.r2 .meta { color: var(--r2-text); }
+.ptable td.r3 .meta { color: var(--r3-text); }
+.ptable tbody tr:hover td.r1, .ptable tbody tr:hover td.r2, .ptable tbody tr:hover td.r3 { filter: brightness(.96); }
+.p-rank li.r1 a { background: var(--r1); color: var(--r1-text); }
+.p-rank li.r1 .rk, .p-rank li.r1 .df, .p-rank li.r1 .chg { color: var(--r1-text); }
+.p-rank li.r1 .pr { font-weight: 800; }
+.p-rank li.r2 a { background: var(--r2); color: var(--r2-text); }
+.p-rank li.r2 .rk, .p-rank li.r2 .df { color: var(--r2-text); }
+.p-rank li.r3 a { background: var(--r3); color: var(--r3-text); }
+.p-rank li.r3 .rk, .p-rank li.r3 .df { color: var(--r3-text); }
+.p-rank li.r1 .dot, .p-rank li.r2 .dot { box-shadow: 0 0 0 2px rgba(255, 255, 255, .85); }
+/* 検索結果の件数の横に出す「何が隠れているか」の注記（再点検 B） */
+.summary .note { display: inline; }
+.summary .note::before { content: "・"; margin: 0 4px; color: var(--muted); }
+.summary .warnnote { font: inherit; font-weight: 700; color: var(--warn); }
+.summary .linkbtn { padding: 2px 4px; text-decoration: underline; text-underline-offset: 2px; }
+/* 検索した色の名前が無く、近い色で当たった商品の印（例: 「ホワイト」で探して「シルバー」が出た時） */
+.neartag { display: inline-block; font: 600 11px "Noto Sans JP", sans-serif; color: var(--accent); background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 5px; padding: 0 5px; margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
+.summary .neartag { margin: 0 2px; }
+/* 検索で数件に絞れた時の「違う部分」の一覧（色違い・容量違いを一目で。押すとその商品へ） */
+.jumps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: -4px 2px 12px; font-size: 12.5px; }
+.jumps button { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid var(--line); background: var(--card);
+  color: var(--text); border-radius: 999px; padding: 4px 10px; font: 500 12.5px "Noto Sans JP", sans-serif; cursor: pointer; text-align: left; }
+.jumps button b { font: 700 12px var(--num); color: var(--accent); white-space: nowrap; }
+.jumps button .neartag { margin-left: 0; }
+@media (min-width: 1000px) { .list .prod { scroll-margin-top: calc(var(--hdr, 0px) + 8px); } }
+/* ---- 最高値の値動き（取得した回どうしで最高買取額を比べる。値上がりは赤▲・値下がりは青▼） ---- */
+.top .mvbtn[aria-pressed=true] { background: #fff; color: #0b1220; font-weight: 600; border-color: #fff; }
+.mvbar { background: var(--card); border-radius: 12px; padding: 10px 14px 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.mvhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 15px; }
+.mvnote { margin: 4px 0 2px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.mvnote b { color: var(--text); }
+.mvrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.mvseg { display: inline-flex; flex-wrap: wrap; gap: 2px; background: var(--chip); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
+.mvseg button { border: 0; background: none; color: var(--muted); font-size: 13px; padding: 5px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.mvseg button[aria-pressed=true] { background: var(--card); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(15, 23, 42, .15); }
+.mvseg button:disabled { opacity: .45; cursor: default; }
+.mvseg button b { font: 600 12px var(--num); margin-left: 5px; }
+.mvseg .up { color: var(--up); margin-right: 2px; } .mvseg .down { color: var(--down); margin-right: 2px; }
+.mvcustom { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); max-width: 100%; min-width: 0; }
+.mvcustom select { min-width: 0; flex: 1 1 8em; max-width: 100%; }  /* スマホで期間の選択欄がはみ出して横スクロールが出ていた（2026-09-28） */
+.mvbar select { font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card2); color: var(--text); max-width: 100%; }
+.mvbox { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card2); }
+.mvbox.up { background: color-mix(in srgb, var(--up) 7%, var(--card)); border-color: color-mix(in srgb, var(--up) 30%, var(--line)); }
+.mvbox.down { background: color-mix(in srgb, var(--down) 7%, var(--card)); border-color: color-mix(in srgb, var(--down) 30%, var(--line)); }
+.mvd { font: 800 22px/1.2 var(--num); letter-spacing: -.01em; }
+.mvd small { font: 600 13px var(--num); margin-left: 8px; }
+.mvd.up { color: var(--up); } .mvd.down { color: var(--down); }
+.mvd.new, .mvd.gone { font: 700 14px "Noto Sans JP", sans-serif; color: var(--muted); }
+.mvab { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 8px; }
+.mvside { display: grid; min-width: 0; }
+.mvt { font-size: 11px; color: var(--muted); }
+.mvp { font: 700 16px var(--num); }
+.mvp.none { color: var(--muted); }
+.mvs { font-size: 12px; display: flex; align-items: center; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--muted); }
+.mvarrow { color: var(--muted); padding-bottom: 14px; }
+.mvcard .p-acts { margin-top: 0; }
+.mvwhy { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.ptable .mvwhy { margin-top: 2px; }
+.ptable td.mvdiff { font-weight: 700; font-size: 14px; }
+.ptable td.mvdiff.up { color: var(--up); } .ptable td.mvdiff.down { color: var(--down); }
+.ptable th.mvcol { white-space: normal; min-width: 110px; }
+.ptable td.mvto { font-weight: 700; }
+.ptable td .meta .dot { margin-right: 4px; }
+.ptable.mvtable { width: auto; min-width: min(100%, 900px); }
+.ptable.mvtable td.num, .ptable.mvtable th.num { min-width: 96px; }
+.tablewrap.mvwrap { width: fit-content; max-width: 100%; }
+
+/* ---- バーコード読み取り（検索欄の 📷 と小窓） ---- */
+.scanbtn { flex: none; border: 0; background: none; color: var(--headtext); font-size: 18px; line-height: 1; padding: 6px 2px 6px 6px; cursor: pointer; opacity: .85; }
+.scanbtn:hover, .scanbtn:focus-visible { opacity: 1; }
+.sheet { position: fixed; inset: 0; z-index: 40; background: rgba(2, 6, 23, .62); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.sheetbox { width: min(480px, 100%); background: var(--card); color: var(--text); border-radius: 16px; padding: 12px 16px 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, .4); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }  /* 中身（カメラの映像・設定の行）の最小幅で画面より広がらない（320px で × が画面の外に出ていた） */
+.sheethead { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+.sheet .x { font-size: 26px; border: 0; background: none; color: var(--text); cursor: pointer; line-height: 1; padding: 0 4px; }
+.scanview { position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 4 / 3; }
+.scanview video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* 読み取りの枠: 真ん中の横長の帯（zxDecoder が 1 回おきに読む範囲と同じ縦 40%） */
+.scanframe { position: absolute; left: 8%; right: 8%; top: 30%; height: 40%; border: 2px solid #34d399; border-radius: 10px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); pointer-events: none; }
+.scanframe::after { content: ""; position: absolute; left: 6%; right: 6%; top: 50%; height: 2px; background: rgba(248, 113, 113, .85); }
+.scanmsg { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+.scanmsg.err { color: var(--err); }
+.scanform { display: flex; gap: 8px; }
+.scanform input { flex: 1; min-width: 0; font: 16px var(--num); padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card2); color: var(--text); }
+.scanform button, .sheetacts button { font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card2); color: var(--text); cursor: pointer; }
+.scanform button, .sheetacts .primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+/* ---- 実利益の計算の設定 ---- */
+.pfsetbox p { margin: 0; }
+.pfsetbox .muted { font-size: 12px; line-height: 1.6; }
+.pfrow { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.pfrow > span { flex: 0 1 7.5em; min-width: 4.5em; font-weight: 600; }
+.pfrow input, .pfrow select { font: 16px var(--num); padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card2); color: var(--text); }
+.pfrow input { width: 8em; flex: 0 1 8em; min-width: 4em; text-align: right; }
+.pfrow em { font-style: normal; color: var(--muted); }
+.sheetacts { display: flex; justify-content: flex-end; gap: 8px; }
+#pfSetMsg:empty { display: none; }
+
+/* ---- 実利益（カード・表の行・売り先計算） ---- */
+.profit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 8px 12px; border-radius: 12px;
+  background: var(--card2); border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--line)); font-size: 13px; }
+.prod .profit { grid-column: 1 / -1; }
+@media (min-width: 1000px) { .prod .profit { grid-row: 2; } }  /* PC: 3 列の下の段（推移グラフより上） */
+.pf-in { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+.pf-in input, .buyin input { width: 8.5em; font: 600 15px var(--num); padding: 5px 8px; text-align: right; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--card); color: var(--text); }
+.pf-in input:focus, .buyin input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 1px; }
+.pf-out { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; flex: 1 1 260px; min-width: 0; }
+.pf-net { font: 800 15px var(--num); white-space: nowrap; }
+.pf-net.plus, .pf-rate.plus { color: var(--best); }
+.pf-net.minus, .pf-rate.minus { color: var(--err); }
+.pf-rate { font: 600 12.5px var(--num); white-space: nowrap; }
+.pf-bd { flex-basis: 100%; font-size: 12px; color: var(--muted); font-family: var(--num); overflow-wrap: anywhere; }
+.profit .pf-set { margin-left: auto; font-size: 12px; }
+.profit.flash { animation: pfflash 1.6s ease-out; }
+@keyframes pfflash { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); } 100% { box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .profit.flash { animation: none; outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); } }
+.p-acts button.pfbtn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.ptable td.acts, .ptable th.acts { width: 84px; }
+.ptable button.pf { border: 1px solid var(--line); background: var(--card2); border-radius: 6px; width: 22px; height: 22px; cursor: pointer; padding: 0;
+  font: 600 12px var(--num); line-height: 1; color: var(--muted); }
+.ptable button.pf.on { color: var(--accent); border-color: var(--accent); }
+.ptable .profrow td { text-align: left; background: var(--card2); white-space: normal; }
+.ptable .profrow .profit { max-width: 960px; background: var(--card); }
+.ptable td.topv .pfmeta:empty { display: none; }
+.ptable td.topv .pfmeta .pf-net { font-size: 12px; }
+.buyin { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.buyin input { width: 8em; font-size: 14px; }
+.buyin input.bad, .pf-in input.bad { border-color: var(--err); }
+.pfsum { margin: 8px 0 2px; padding: 8px 10px; border-radius: 10px; background: var(--card2); display: grid; gap: 3px; }
+.pfsum:empty { display: none; }
+.pfhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.pfhead > span:first-child { font-weight: 700; font-size: 13px; }
+.pfhead .pf-net { font-size: 18px; }
+.pfhead .linkbtn { margin-left: auto; }
+table.inv.single td[data-pfs] .pf-net { font-size: 14px; }
+/* 320px では「1店にまとめる」の表（4 列）が画面より 9〜20px 広かった（数字の列は折り返さない・扱う商品の列に長い型番）。
+   余白を詰め、扱う商品の列は語の途中でも折り返す（2026-10-01。360px 以上は元から収まっていた） */
+@media (max-width: 380px) {
+  table.inv.single th, table.inv.single td { padding: 7px 5px; }
+  table.inv.single td:last-child { overflow-wrap: anywhere; }
+}
+/* 売り先計算: 手取り見込みの決まり（査定減額・既定の送料）の一言 */
+.cartnote { margin: 10px 0 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.cartnote .linkbtn { font-size: 12px; padding: 0 4px; text-decoration: underline; text-underline-offset: 2px; }
+/* 推移グラフの損益分岐の線 */
+.chart .beline { stroke: var(--err); }
+.legend .belegend { color: var(--err); }
+@media (max-width: 999px) {
+  /* iPhone は 16px 未満の入力欄を押すと画面が拡大されるので、実利益・仕入れ値の欄は 16px */
+  .pf-in input, .buyin input { font-size: 16px; }
+  .profit .pf-set { margin-left: 0; }
+  /* 売り先計算の「送料・手数料の設定」: 欄の幅（92px × 3）で表が画面より広くなり、390px で 12px・320px で 82px 横にずれていた。
+     実利益の送料をここで店ごとに決めるので、スマホでも横にずれずに入れられるようにする。欄は 16px（iPhone の拡大を防ぐ）。2026-09-29 再点検 */
+  .fees table.inv th, .fees table.inv td { padding: 6px; }
+  .fees table.inv td:first-child { overflow-wrap: anywhere; }
+  .fees input { width: 100%; max-width: 8em; min-width: 0; box-sizing: border-box; font-size: 16px; padding: 4px 6px; }  /* 8em: タブレットの幅（600〜999px）で欄が 250px 近くまで広がらないように */
+  .qty input, .pat select, .pat input { font-size: 16px; }
+  /* 入力画面のパスワード欄・いつもの見た目の検索欄も 16px（2026-09-30 再総チェック: 15px で、iPhone では最初のパスワード入力と検索で
+     画面が拡大されたままになる。取引所の見た目の検索欄は skin-board.css で 16px 済み） */
+  .gate input, .search input { font-size: 16px; }
+}
+
+/* ---- データが古い時の帯（取得の予定時刻から 90 分たっても新しいデータが無い） ---- */
+:root { --stale-bg: #dc2626; --stale-text: #ffffff; --newer-bg: #1d4ed8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --stale-bg: #b91c1c; --stale-text: #fff5f5; --newer-bg: #1e40af; } }
+.stale { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; background: var(--stale-bg); color: var(--stale-text);
+  padding: 8px 16px; font-size: 13.5px; line-height: 1.5; }
+.stale b { font-weight: 700; }
+.stale .stale-sub { font-size: 12.5px; opacity: .95; }
+.stale button { font: inherit; font-size: 12.5px; font-weight: 600; padding: 3px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .7);
+  background: rgba(255, 255, 255, .15); color: inherit; cursor: pointer; }
+.stale.newer { background: var(--newer-bg); }
+.updated.old { color: #fca5a5; font-weight: 700; }
+@media (min-width: 1000px) { .stale { padding: 8px 24px; } }
+
+/* ---- 見た目の切替・設定の控え（2026-09-29 追加。新しい部品の「いつもの」見た目での形。既存の規則は変えない。取引所は skin-board.css） ---- */
+html:not([data-skin="board"]) .ticker { display: none !important; }  /* 値動きテロップは取引所だけ */
+.skinbtn { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .08);
+  color: var(--headtext); border-radius: 999px; padding: 5px 11px; cursor: pointer; font-size: 12.5px; white-space: nowrap; }
+.skinbtn:hover { background: rgba(255, 255, 255, .16); }
+.skinbtn .lbl { color: var(--headmuted); }
+.skinbtn b { font-weight: 600; }
+@media (max-width: 420px) {  /* スマホでロゴ（買取価格比較）が 2 行に折れないように、切替ボタンは今の見た目の名前だけにして詰める（390px で折れていた） */
+  .skinbtn .lbl { display: none; }
+  .skinbtn { padding: 4px 8px; font-size: 12px; }
+  .barright { gap: 8px; }  /* スマホは更新時刻を出さないので、切替ボタンと売り先計算のボタンの間だけが詰まる */
+}
+@media (max-width: 340px) {  /* さらに狭い時は記号だけ（320px でも「買取価格比較」を 1 行に。押した時の名前は aria-label に今の見た目を入れている） */
+  .skinbtn b { display: none; }
+  .skinbtn::before { content: "◐"; font-size: 14px; line-height: 1; }
+}
+.foot .syncopen { display: inline-block; margin: 0 8px 12px; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--card);
+  color: var(--text); text-decoration: none; font-size: 13px; }
+.syncbox { width: min(560px, 100%); }
+.syncbox p { margin: 0; }
+.syncmsg { margin: 0; font-size: 13px; line-height: 1.6; padding: 8px 10px; border-radius: 10px; background: var(--card2); overflow-wrap: anywhere; }
+.syncmsg.ok { background: var(--best-bg); }
+.syncmsg.err { background: var(--warn-bg); color: var(--err); }
+.syncsec { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+.syncsec h3 { font-size: 14px; margin: 0 0 4px; }
+.syncsec p { margin: 0 0 8px; line-height: 1.6; }
+#syncBody .muted { line-height: 1.6; }
+.syncacts { display: flex; flex-wrap: wrap; gap: 8px; }
+.syncacts button, .filebtn, .synclink button { position: relative; font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card2); color: var(--text); cursor: pointer; }
+.syncacts .primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.filebtn input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; overflow: hidden; }  /* 選ぶ欄は見えないが、Tab で届く（ラベルを押すと開く） */
+.filebtn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.synclink { display: flex; gap: 8px; margin: 8px 0 4px; }
+.synclink input { flex: 1; min-width: 0; font: 13px var(--num); padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--card2); color: var(--text); }
+.qrbox { width: min(280px, 100%); margin: 8px auto 0; background: #fff; padding: 8px; border-radius: 10px; }
+.qrbox svg { display: block; width: 100%; height: auto; }
+.synctbl { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+.synctbl th { text-align: left; font-weight: 600; color: var(--muted); padding: 6px 10px 6px 0; vertical-align: top; width: 38%; }
+.synctbl td { padding: 6px 0; overflow-wrap: anywhere; }
+.synctbl tr + tr { border-top: 1px solid var(--line); }
+#syncBody .warnbox { margin: 8px 0; }
+.syncmode { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px 8px; margin: 8px 0; min-width: 0; }  /* 取り込み方（足し合わせる／置き換える） */
+.syncmode legend { font-size: 13px; font-weight: 600; padding: 0 4px; }
+.syncmode label { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; font-size: 14px; line-height: 1.5; cursor: pointer; }
+.syncmode label + label { border-top: 1px solid var(--line); }
+.syncmode input { margin: 4px 0 0; flex: none; width: 18px; height: 18px; }
+.syncmode .muted { font-size: 12px; }
+#syncBody .syncplanh { margin: 10px 0 0; font-size: 13px; }
+#syncPlan .synctbl { margin-top: 4px; }
+#syncBody .syncenc { margin: 6px 0; }
+@media (max-width: 999px) { .synclink input { font-size: 16px; } }
+
+/* フリマの検索リンク（2026-09-29）。押しやすさのため 1 つずつ枠付きの小さなボタンにする */
+.flea { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; container-type: inline-size; }
+/* 見出しは「売り切れ」の下に小さく「新品・新しい順」の 2 段（「売り切れ（新品・新しい順）」を横 1 行にすると、390px でもボタンが次の行へ回った） */
+.flea .flea-l { display: inline-flex; flex-direction: column; justify-content: center; color: var(--muted); font-size: 11px; line-height: 1.2; margin-right: 2px; }
+.flea .flea-l small { font-size: 10px; }
+.flea a { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px;
+  color: var(--text); text-decoration: none; background: var(--card2); white-space: nowrap; }
+.flea a:hover, .flea a:focus-visible { border-color: var(--accent); color: var(--accent); }
+/* 欄が狭い時（見出しとボタン 3 つを 1 行に並べるには約 315px 要る。スマホ 375px 以下・PC の取引所のカード）は、見出しを 1 行目に回して
+   ボタン 3 つを次の行に 1 行で並べる（そのままだとボタンが 2 行に割れた）。さらに狭い欄はボタンの左右の余白を詰める（上の .flea a より後ろに置く） */
+@container (max-width: 314px) {
+  .flea .flea-l { flex-basis: 100%; flex-direction: row; justify-content: flex-start; margin-bottom: -3px; }
+  .flea .flea-l small { font-size: 11px; }
+  .flea .flea-l small::before { content: "（"; }
+  .flea .flea-l small::after { content: "）"; }
+}
+@container (max-width: 240px) {
+  .flea a { padding-left: 6px; padding-right: 6px; }
+}
+/* 店別の表: 型番・JAN の行の右に続けて並べる（別の行にすると 1 行が 26px 高くなった。2026-09-29 独立 QA）。
+   入りきらない時だけ次の行へ回る。表では見出しの文字を出さない（何を開くかは title と読み上げの名前にある） */
+.ptable .pname .meta .flea { display: inline-flex; vertical-align: middle; margin: 0 0 0 8px; font-size: 11px; gap: 4px; container-type: normal; }  /* 幅の封じ込めは外す（inline-flex の幅が 0 になる） */
+.ptable .pname .meta .flea .flea-l { display: none; }
+.ptable .pname .meta .flea a { min-height: 22px; padding: 0 7px; }
+/* 指で押す端末（スマホ・タブレット）は少し高く（カードは取引所の見た目の他のボタンと同じ 32px） */
+@media (pointer: coarse) {
+  .flea a { min-height: 32px; }
+  .ptable .pname .meta .flea a { min-height: 28px; }
+}
