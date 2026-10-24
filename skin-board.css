@@ -1,0 +1,259 @@
+/* 見た目「取引所の板」（2026-09-29 ユーザーが選んだ案A。見本は scratchpad の design3/project/Main.dc.html・A_PC.dc.html）。
+   <html data-skin="board"> の時だけ効く（skin-init.js・skin.js が付け外しする）。data-skin が無い時（いつもの）はどの規則も効かない
+   （すべての規則が [data-skin="board"] の下。tests/test_web_skin.py が確かめる）。
+   色: 地 #0A0E0D・面 #121917 / #111816・線 #22302B / #2A3A34・文字 #E8EFEC・補足 #8FA39B・最高値の金 #F2C14E・
+       値上がり 赤 #FF5A4E ▲・値下がり 青 #4DA3FF ▼（いつもと同じ意味）・実利益のプラス #3DDC97。
+   書体: 本文 IBM Plex Sans JP・数字 Chivo Mono（Google Fonts。index.html）。
+     数字は「0 が普通の丸」の等幅の書体にする（2026-10-02 ユーザーの指摘: 以前の JetBrains Mono は 0 の中に点があり、表の小さい字で 8 に見えた。
+     等幅の書体の多くは 0 に点か斜線が入る。Chivo Mono は入らず、1 字の幅も JetBrains Mono と同じ 0.6em なので列の幅・桁そろえは変わらない。
+     確かめる道具は tests/browser/number_font_check.py）
+   端末の明暗設定にかかわらず黒地の 1 つの見た目（style.css の暗い色の上書き :root:not([data-theme]) より強い html:root[data-skin] で決める）。
+   見た目だけの着せ替え: 計算・並び・表示する中身は変えない。 */
+html:root[data-skin="board"] {
+  color-scheme: dark;
+  --bg: #0A0E0D; --card: #121917; --card2: #111816; --text: #E8EFEC; --muted: #8FA39B; --line: #22302B; --line2: #2A3A34; --line3: #1A2420;
+  --head: #0A0E0D; --head2: #0A0E0D; --headtext: #E8EFEC; --headmuted: #8FA39B;
+  --accent: #F2C14E; --accent-soft: rgba(242, 193, 78, .12); --gold: #F2C14E; --gold-hi: #FFD97A; --plus: #3DDC97; --barfill: #1E2A1F;
+  --best: #F2C14E; --best-bg: rgba(242, 193, 78, .08); --best-line: #2A3A34;
+  --up: #FF5A4E; --down: #4DA3FF; --warn: #F2A33A; --warn-bg: #221A0E; --err: #FF6B60;
+  --chip: #1A2420; --shadow: none;
+  --r1: rgba(242, 193, 78, .15); --r1-text: #F2C14E; --r2: #1E2A1F; --r2-text: #E8EFEC; --r3: #16201B; --r3-text: #E8EFEC;
+  --stale-bg: #6B1A14; --stale-text: #FFEDEA; --newer-bg: #133A63;
+  --num: "Chivo Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
+  --ink: #0A0E0D;  /* 金の地の上の文字 */
+}
+[data-skin="board"] body { font-family: var(--sans); background: var(--bg); color: var(--text); }
+[data-skin="board"] .muted { color: var(--muted); }
+
+/* ---- ヘッダー ---- */
+[data-skin="board"] .top { background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: none; }
+[data-skin="board"] .brand .logo { display: none; }
+[data-skin="board"] .brand h1 { font-size: 0; letter-spacing: 0; line-height: 1; white-space: nowrap; }
+[data-skin="board"] .brand h1::before { content: "KAITORI BOARD"; font: 700 15px/1.2 var(--num); letter-spacing: .18em; color: var(--gold); }
+[data-skin="board"] .updated { color: var(--muted); font-family: var(--num); font-size: 11.5px; }
+[data-skin="board"] .updated.old { color: var(--up); }
+[data-skin="board"] .cartbtn, [data-skin="board"] .skinbtn { background: transparent; border: 1px solid var(--line2); color: var(--text); }
+[data-skin="board"] .cartbtn:hover, [data-skin="board"] .skinbtn:hover { background: var(--chip); }
+[data-skin="board"] .cartbtn b { background: var(--gold); color: var(--ink); font-family: var(--num); }
+[data-skin="board"] .skinbtn .lbl { color: var(--muted); }
+[data-skin="board"] .skinbtn b { color: var(--gold); }
+[data-skin="board"] .search { background: var(--card); border: 1px solid var(--line2); border-radius: 10px; min-height: 46px; padding: 0 6px 0 12px; gap: 10px; }
+[data-skin="board"] .search:focus-within { border-color: var(--gold); background: var(--card); }
+[data-skin="board"] .search > span { flex: none; width: 18px; height: 18px; font-size: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA39B' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") center / 18px no-repeat; }
+[data-skin="board"] .search input { color: var(--text); font-size: 15px; }
+[data-skin="board"] .search input::placeholder { color: var(--muted); }
+[data-skin="board"] .scanbtn { flex: none; width: 34px; height: 34px; padding: 0; font-size: 0; opacity: 1; border: 1px solid var(--gold); border-radius: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F2C14E' stroke-width='2'%3E%3Cpath d='M4 7V5h3M20 7V5h-3M4 17v2h3M20 17v2h-3M8 8v8M11 8v8M14 8v8M17 8v8'/%3E%3C/svg%3E") center / 18px no-repeat; }
+[data-skin="board"] .scanbtn:hover, [data-skin="board"] .scanbtn:focus-visible { background-color: var(--accent-soft); }
+[data-skin="board"] .top select, [data-skin="board"] .top .ghost { background: var(--card); border: 1px solid var(--line2); color: var(--text); border-radius: 10px; min-height: 34px; }
+[data-skin="board"] .top select option { color: var(--text); background: var(--card); }
+[data-skin="board"] .top .ghost b { color: var(--gold); font-family: var(--num); }
+[data-skin="board"] .top .mvbtn { border-color: var(--gold); color: var(--gold); }
+[data-skin="board"] .top .mvbtn[aria-pressed=true] { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+[data-skin="board"] .chk { color: var(--muted); }
+[data-skin="board"] .seg { background: var(--card); border-color: var(--line2); }
+[data-skin="board"] .seg button { color: var(--muted); }
+[data-skin="board"] .seg button[aria-pressed=true] { background: var(--gold); color: var(--ink); }
+[data-skin="board"] .cats button { color: var(--muted); }
+[data-skin="board"] .cats button span { font-family: var(--num); }
+[data-skin="board"] .cats button:hover { color: var(--text); }
+[data-skin="board"] .cats button[aria-pressed=true] { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ---- 値動きテロップ（skin.js。最高値が前回から動いた商品を横に流す。動きを減らす設定では流さない） ---- */
+[data-skin="board"] .ticker { display: flex; align-items: stretch; margin: -10px -16px 10px; background: var(--card2); border-bottom: 1px solid var(--line);
+  font: 500 12px/1 var(--num); }
+[data-skin="board"] .tk-view { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding-left: 14px; }
+[data-skin="board"] .tk-view::-webkit-scrollbar { display: none; }
+[data-skin="board"] .ticker.moving .tk-view { overflow: hidden; }
+[data-skin="board"] .tk-track { display: inline-flex; white-space: nowrap; }
+[data-skin="board"] .ticker.moving .tk-track { animation: tkmove var(--tkdur, 40s) linear infinite; }
+[data-skin="board"] .ticker.moving:hover .tk-track, [data-skin="board"] .ticker.moving:focus-within .tk-track, [data-skin="board"] .ticker.paused .tk-track { animation-play-state: paused; }
+@keyframes tkmove { to { transform: translateX(-50%); } }
+[data-skin="board"] .tk { display: inline-flex; align-items: baseline; gap: 6px; margin-right: 22px; padding: 10px 0; border: 0; background: none; font: inherit;
+  color: var(--muted); cursor: pointer; white-space: nowrap; }
+[data-skin="board"] .tk.up { color: var(--up); }
+[data-skin="board"] .tk.down { color: var(--down); }
+[data-skin="board"] .tk:hover .tk-n, [data-skin="board"] .tk:focus-visible .tk-n { text-decoration: underline; text-underline-offset: 3px; }
+[data-skin="board"] .tk-n { font-family: var(--sans); font-weight: 500; }
+[data-skin="board"] .tk-d { font-weight: 700; }
+[data-skin="board"] .tk-p, [data-skin="board"] .tk-s { display: none; }
+[data-skin="board"] .tk-pause { flex: none; width: 38px; border: 0; border-left: 1px solid var(--line); background: var(--card2); color: var(--muted); cursor: pointer; font: 12px var(--num); }
+[data-skin="board"] .tk-pause:hover { color: var(--gold); }
+[data-skin="board"] .tk-empty { padding: 10px 14px; color: var(--muted); font-family: var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) { [data-skin="board"] .tk-track { animation: none !important; } }
+/* テロップから移った先の商品（少しの間 金色の枠） */
+[data-skin="board"] .tk-hit { outline: 2px solid var(--gold); outline-offset: 2px; }
+[data-skin="board"] tr.tk-hit td { background: var(--accent-soft) !important; }
+
+/* ---- 要約（KPI）・取得状況・店の選択 ---- */
+[data-skin="board"] .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: none; padding: 12px 14px; }
+[data-skin="board"] .kpi span { color: var(--muted); font-size: 11px; }
+[data-skin="board"] .kpi b { font: 700 22px/1.2 var(--num); letter-spacing: -.02em; }
+[data-skin="board"] .kpi b small { font-family: var(--num); }
+[data-skin="board"] .shops, [data-skin="board"] .shoppick, [data-skin="board"] .mvbar { background: var(--card); border: 1px solid var(--line); box-shadow: none; }
+[data-skin="board"] .tag.ok { background: rgba(61, 220, 151, .12); color: var(--plus); }
+[data-skin="board"] .summary b { font-family: var(--num); }
+[data-skin="board"] .jumps button { background: var(--card); border-color: var(--line2); font-family: var(--sans); }
+[data-skin="board"] .jumps button b { color: var(--gold); font-family: var(--num); }
+[data-skin="board"] .neartag, [data-skin="board"] .storetag { font-family: var(--sans); }
+[data-skin="board"] .more { background: var(--card); border-color: var(--line2); box-shadow: none; }
+
+/* ---- パスワード ---- */
+[data-skin="board"] .gate form { background: var(--card); border: 1px solid var(--line2); box-shadow: none; }
+[data-skin="board"] .gate input { background: var(--bg); border-color: var(--line2); }
+[data-skin="board"] .gate button { background: var(--gold); color: var(--ink); font-weight: 700; }
+[data-skin="board"] .gate .logo.big { background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: var(--num); }
+
+/* ---- 商品カード（ランキング）: 最高値は金色の大きな等幅の数字、店の一覧は「買取の板」 ---- */
+[data-skin="board"] .prod { background: var(--card); border: 1px solid var(--line2); box-shadow: none; }
+[data-skin="board"] .p-title .name:hover { color: var(--gold); }
+[data-skin="board"] .p-meta { font-size: 11.5px; }
+[data-skin="board"] .p-best { background: transparent; border: 0; padding: 0; }
+[data-skin="board"] .p-best .lbl { color: var(--muted); font-weight: 600; letter-spacing: .14em; }
+[data-skin="board"] .p-best .amt { display: inline-block; font: 700 40px/1.1 var(--num); color: var(--gold); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+[data-skin="board"] .p-best .bshop { color: var(--text); }
+[data-skin="board"] .p-best.storeonly { background: transparent; }
+[data-skin="board"] .p-best.storeonly .amt { color: var(--warn); }
+[data-skin="board"] .ptable td.topv.aside { color: var(--warn); }
+[data-skin="board"] .p-acts button { background: transparent; border: 1px solid var(--line2); color: var(--text); border-radius: 8px; min-height: 32px; padding: 4px 12px; }
+[data-skin="board"] .p-acts button:hover { border-color: var(--gold); color: var(--gold); }
+[data-skin="board"] .p-acts button.add { background: transparent; border-color: var(--gold); color: var(--gold); }
+[data-skin="board"] .p-acts button.pfbtn { background: var(--gold); border-color: var(--gold); color: var(--ink); font-weight: 700; }
+[data-skin="board"] .p-acts button.pfbtn.on { background: var(--gold-hi); border-color: var(--gold-hi); color: var(--ink); }
+[data-skin="board"] button.fav.on { color: var(--gold) !important; }
+/* 買取の板: 各店の行の背景に、最高値に対する割合（app.js の rankChip の --bar）の長さの棒 */
+[data-skin="board"] .p-rank ol { gap: 3px; }
+[data-skin="board"] .p-rank li a { position: relative; isolation: isolate; overflow: hidden; background: transparent; color: var(--text); border-radius: 6px;
+  padding: 6px 8px; font-family: var(--num); }
+[data-skin="board"] .p-rank li a::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--bar, 0%); background: var(--barfill); z-index: -1; }
+[data-skin="board"] .p-rank li a:hover { background: var(--chip); }
+[data-skin="board"] .p-rank .sn { font-family: var(--sans); }
+[data-skin="board"] .p-rank .pr { font: 700 13.5px var(--num); }
+[data-skin="board"] .p-rank .rk, [data-skin="board"] .p-rank .df { color: var(--muted); }
+[data-skin="board"] .p-rank li.first .rk { color: var(--gold); }
+[data-skin="board"] .p-rank li.r1 a, [data-skin="board"] .p-rank li.r2 a, [data-skin="board"] .p-rank li.r3 a { background: transparent; color: var(--text); }
+[data-skin="board"] .p-rank li.r1 a::before { background: rgba(242, 193, 78, .17); }
+[data-skin="board"] .p-rank li.r1 .pr { color: var(--gold); font-weight: 700; }
+[data-skin="board"] .p-rank li.r1 .rk, [data-skin="board"] .p-rank li.r1 .df, [data-skin="board"] .p-rank li.r2 .rk, [data-skin="board"] .p-rank li.r2 .df,
+[data-skin="board"] .p-rank li.r3 .rk, [data-skin="board"] .p-rank li.r3 .df { color: var(--muted); }
+[data-skin="board"] .p-rank li.first.r1 .rk { color: var(--gold); }
+[data-skin="board"] .p-rank li.r1 .chg.up, [data-skin="board"] .ptable td.r1 .chg.up { color: var(--up); }
+[data-skin="board"] .p-rank li.r1 .chg.down, [data-skin="board"] .ptable td.r1 .chg.down { color: var(--down); }
+[data-skin="board"] .p-rank li.r1 .dot, [data-skin="board"] .p-rank li.r2 .dot { box-shadow: none; }
+[data-skin="board"] .p-rank li a:hover::before { opacity: .8; }
+[data-skin="board"] .morebtn { color: var(--gold); }
+[data-skin="board"] .storebox { border-color: rgba(242, 163, 58, .35); }
+[data-skin="board"] .storebox li a { background: transparent; }
+[data-skin="board"] .storebox li a::before { background: rgba(242, 163, 58, .10); }
+[data-skin="board"] .chart { background: var(--card2); border: 1px solid var(--line); }
+
+/* ---- 店別の表（PC）: 板のような等幅の数字の一覧 ---- */
+[data-skin="board"] .tablewrap { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: none; }
+[data-skin="board"] .ptable { font: 13px var(--num); }
+[data-skin="board"] .ptable th, [data-skin="board"] .ptable td { border-bottom-color: var(--line3); }
+[data-skin="board"] .ptable thead th { background: var(--card2); color: var(--muted); font: 600 11px var(--sans); letter-spacing: .06em; border-bottom: 1px solid var(--line); }
+[data-skin="board"] .ptable .pname { font-family: var(--sans); background: var(--bg); box-shadow: 1px 0 0 var(--line); }
+[data-skin="board"] .ptable thead th.pname, [data-skin="board"] .ptable thead th.acts { background: var(--card2); }
+[data-skin="board"] .ptable td.pname, [data-skin="board"] .ptable td.acts, [data-skin="board"] .ptable td.store { background: var(--bg); }
+[data-skin="board"] .ptable td.topv { background: var(--bg); color: var(--gold); font-weight: 700; font-size: 15px; }
+[data-skin="board"] .ptable .pname .name:hover, [data-skin="board"] .ptable th.shop:hover, [data-skin="board"] .ptable th.sorted { color: var(--gold); }
+[data-skin="board"] .ptable td a { color: var(--text); }
+[data-skin="board"] .ptable td.na { color: var(--line2); }
+[data-skin="board"] .ptable tbody tr:hover td { filter: brightness(1.3); }
+[data-skin="board"] .ptable tbody tr:hover td.r1, [data-skin="board"] .ptable tbody tr:hover td.r2, [data-skin="board"] .ptable tbody tr:hover td.r3 { filter: brightness(1.3); }
+[data-skin="board"] .ptable td.r1 a { color: var(--gold); font-weight: 700; }
+[data-skin="board"] .ptable td.r2 a, [data-skin="board"] .ptable td.r3 a { color: var(--text); font-weight: 600; }
+[data-skin="board"] .ptable td.r1 .meta, [data-skin="board"] .ptable td.r2 .meta, [data-skin="board"] .ptable td.r3 .meta { color: var(--muted); }
+[data-skin="board"] .ptable button.add, [data-skin="board"] .ptable button.fav, [data-skin="board"] .ptable button.pf { background: transparent; border-color: var(--line2); }
+[data-skin="board"] .ptable button.add { color: var(--gold); }
+[data-skin="board"] .ptable button.pf.on { color: var(--gold); border-color: var(--gold); }
+[data-skin="board"] .ptable .chartrow td, [data-skin="board"] .ptable .profrow td { background: var(--card2); }
+[data-skin="board"] .ptable .chartrow .chart, [data-skin="board"] .ptable .profrow .profit { background: var(--card); }
+
+/* ---- 実利益 ---- */
+[data-skin="board"] .profit { background: var(--card2); border: 1px solid var(--line2); }
+[data-skin="board"] .pf-in input, [data-skin="board"] .buyin input { background: var(--bg); border-color: var(--line2); font-family: var(--num); }
+[data-skin="board"] .pf-net { font-family: var(--num); }
+[data-skin="board"] .prod .profit .pf-net { font-size: 18px; }
+[data-skin="board"] .pf-net.plus, [data-skin="board"] .pf-rate.plus { color: var(--plus); }
+[data-skin="board"] .pf-net.minus, [data-skin="board"] .pf-rate.minus { color: var(--up); }
+
+/* ---- 最高値の値動き ---- */
+[data-skin="board"] .mvseg { background: var(--bg); border-color: var(--line2); }
+[data-skin="board"] .mvseg button[aria-pressed=true] { background: var(--card); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+[data-skin="board"] .mvbar select { background: var(--bg); border-color: var(--line2); }
+[data-skin="board"] .mvbox { background: var(--card2); }
+[data-skin="board"] .mvd.new, [data-skin="board"] .mvd.gone { font-family: var(--sans); }
+
+/* ---- 売り先計算・小窓・トースト ---- */
+[data-skin="board"] .panel, [data-skin="board"] .panelhead { background: var(--bg); }
+[data-skin="board"] table.inv, [data-skin="board"] .res, [data-skin="board"] .tabs button { box-shadow: none; border: 1px solid var(--line); }
+[data-skin="board"] .tabs button[aria-pressed=true] { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); color: var(--gold); }
+[data-skin="board"] .res .net { color: var(--gold); }
+[data-skin="board"] .besttag { color: var(--gold); }
+[data-skin="board"] .plannote { border-left-color: var(--gold); }
+[data-skin="board"] .pat #patSave, [data-skin="board"] .scanform button, [data-skin="board"] .sheetacts .primary, [data-skin="board"] .syncacts .primary { color: var(--ink); }
+[data-skin="board"] .sheet { background: rgba(0, 0, 0, .72); }
+[data-skin="board"] .sheetbox { border: 1px solid var(--line2); }
+[data-skin="board"] .scanframe { border-color: var(--gold); }
+[data-skin="board"] .toast { background: #1A2420; border: 1px solid var(--line2); color: var(--text); }
+[data-skin="board"] .syncmsg.ok { background: rgba(61, 220, 151, .1); }
+[data-skin="board"] .foot .syncopen { background: transparent; border-color: var(--line2); }
+[data-skin="board"] .syncmode { border-color: var(--line2); }
+[data-skin="board"] .syncmode input { accent-color: var(--gold); }
+
+@media (max-width: 999px) {
+  [data-skin="board"] .search input { font-size: 16px; }  /* iPhone は 16px 未満の入力欄を押すと画面が拡大される */
+  /* スマホ: 見本どおり、大きな最高値の下の行に店名（数字の横に並べると 320px で店名が 1 字ずつ折り返した） */
+  [data-skin="board"] .p-best { grid-template-columns: minmax(0, 1fr); }
+  [data-skin="board"] .p-best .bshop { grid-column: auto; grid-row: auto; justify-self: start; }
+  [data-skin="board"] .p-best .amt { font-size: clamp(30px, 11vw, 42px); }
+}
+@media (max-width: 380px) {
+  [data-skin="board"] .brand h1::before { font-size: 13px; letter-spacing: .1em; }
+}
+/* 売り先計算の 3 つの案の額: 取引所の数字の書体（等幅。1 字 0.6em）は幅が広く、390px で 8 桁（¥10,000,000 以上）が枠から約 5px はみ出していた
+   （2026-09-30 再総チェック。414px 以上・いつもの見た目は入る）。いつもの 380px 以下と同じ 14px・入らない時は折り返す */
+@media (max-width: 400px) {
+  [data-skin="board"] .tabs button b { font-size: 14px; overflow-wrap: anywhere; }
+}
+@media (max-width: 340px) {
+  [data-skin="board"] .tabs button b { font-size: 13px; }
+}
+@media (max-width: 640px) {
+  [data-skin="board"] .kpi { border-radius: 8px; padding: 8px 10px; }
+  [data-skin="board"] .kpi span { font-size: 10px; }
+  [data-skin="board"] .kpi b { font-size: 16px; }
+}
+@media (min-width: 1000px) {
+  [data-skin="board"] .ticker { margin: -12px -24px 12px; font-size: 13px; }
+  [data-skin="board"] .tk-view { padding-left: 24px; }
+  [data-skin="board"] .tk { margin-right: 36px; }
+  [data-skin="board"] .tk-p, [data-skin="board"] .tk-s { display: inline; }
+  [data-skin="board"] .tk-p { color: var(--text); }
+  [data-skin="board"] .tk-s { color: var(--muted); font-family: var(--sans); font-size: 12px; }
+  [data-skin="board"] .p-best .amt { font-size: 30px; }
+  /* カテゴリは左の縦並び（件数つき）。ヘッダーの下端から（skin.js が --sideTop を合わせる） */
+  [data-skin="board"] .cats { position: fixed; left: 0; top: var(--sideTop, var(--hdr, 170px)); bottom: 0; width: 200px; margin: 0; padding: 16px 12px 24px;
+    flex-direction: column; flex-wrap: nowrap; gap: 2px; overflow-y: auto; overflow-x: hidden; background: var(--bg); border-right: 1px solid var(--line); z-index: 9; }
+  [data-skin="board"] .cats button { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; width: 100%; padding: 8px 10px; border: 0;
+    border-radius: 8px; color: var(--text); text-align: left; white-space: normal; }
+  [data-skin="board"] .cats button span { color: var(--muted); font: 500 12px var(--num); opacity: 1; margin-left: 0; }
+  [data-skin="board"] .cats button:hover { background: var(--chip); color: var(--text); }
+  [data-skin="board"] .cats button[aria-pressed=true] { background: var(--gold); color: var(--ink); font-weight: 700; }
+  [data-skin="board"] .cats button[aria-pressed=true] span { color: var(--ink); }
+  [data-skin="board"] main { margin-left: 200px; }
+  /* 左の縦並びの分だけ狭いので、カードの 3 列の最小幅を下げる（1000〜1300px で横にはみ出さないように） */
+  [data-skin="board"] .prod { grid-template-columns: minmax(220px, 1.2fr) 200px minmax(0, 3fr); }
+  [data-skin="board"] .panel { border-left: 1px solid var(--line); box-shadow: -12px 0 40px rgba(0, 0, 0, .5); }
+}
+
+/* フリマの検索リンク（取引所の見た目） */
+[data-skin="board"] .flea .flea-l { color: var(--muted); }
+[data-skin="board"] .flea a { background: transparent; border-color: var(--line2); color: var(--text); }
+[data-skin="board"] .flea a:hover, [data-skin="board"] .flea a:focus-visible { border-color: var(--gold); color: var(--gold); }
+
+/* テロップの読み上げ用の .sr-only（絶対配置）が箱の切り取りから外れ、動きを減らす設定でページ全体が横に動いていた（2026-09-29 フリマの QA で発見） */
+[data-skin="board"] .tk-view { position: relative; }
